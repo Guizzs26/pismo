@@ -26,7 +26,7 @@ func (r *AccountRepository) Create(
 	const query = `
 		INSERT INTO accounts (document_number)
 		VALUES ($1)
-		RETUNING account_id, document_number
+		RETURNING account_id, document_number
 	`
 
 	if err := r.db.QueryRow(ctx, query, account.DocumentNumber).Scan(
@@ -37,7 +37,7 @@ func (r *AccountRepository) Create(
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return domain.Account{}, domain.ErrDocumentAlreadyExists
 		}
-		return domain.Account{}, fmt.Errorf("create account: %v", err)
+		return domain.Account{}, fmt.Errorf("inserting account with document %q: %w", account.DocumentNumber, err)
 	}
 
 	return account, nil
@@ -58,7 +58,7 @@ func (r *AccountRepository) FindByID(ctx context.Context, id int64) (domain.Acco
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Account{}, domain.ErrAccountNotFound
 		}
-		return domain.Account{}, fmt.Errorf("find account by id: %v", err)
+		return domain.Account{}, fmt.Errorf("querying account with id %d: %v", id, err)
 	}
 
 	return account, nil

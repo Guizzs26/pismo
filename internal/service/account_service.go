@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Guizzs26/pismo/internal/domain"
 )
@@ -15,13 +16,23 @@ func NewAccountService(repo domain.AccountRepository) *AccountService {
 }
 
 func (s *AccountService) Create(ctx context.Context, documentNumber string) (domain.Account, error) {
-	acc := &domain.Account{
+	acc := domain.Account{
 		DocumentNumber: documentNumber,
 	}
 
-	return s.repo.Create(ctx, acc)
+	acc, err := s.repo.Create(ctx, acc)
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("registering account: %w", err)
+	}
+
+	return acc, nil
 }
 
 func (s *AccountService) FindByID(ctx context.Context, id int64) (domain.Account, error) {
-	return s.repo.FindByID(ctx, id)
+	acc, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("retrieving account details: %w", err)
+	}
+
+	return acc, nil
 }

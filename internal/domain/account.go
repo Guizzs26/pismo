@@ -16,6 +16,6 @@ type Account struct {
 }
 
 type AccountRepository interface {
-	Create(ctx context.Context, account *Account) (Account, error)
+	Create(ctx context.Context, account Account) (Account, error)
 	FindByID(ctx context.Context, id int64) (Account, error)
 }
