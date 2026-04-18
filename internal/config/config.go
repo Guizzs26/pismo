@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -24,9 +25,9 @@ type DBConfig struct {
 	SSLMode         string
 	MaxConns        int32
 	MinConns        int32
-	MaxConnLifetime int
-	MaxConnIdleTime int
-	HealthCheck     int
+	MaxConnLifetime time.Duration
+	MaxConnIdleTime time.Duration
+	HealthCheck     time.Duration
 	ConnString      string
 }
 
@@ -44,9 +45,9 @@ func Load() *Config {
 		SSLMode:         getEnv("DB_SSLMODE", "disable"),
 		MaxConns:        getEnv[int32]("DB_MAX_CONNS", 25),
 		MinConns:        getEnv[int32]("DB_MIN_CONNS", 5),
-		MaxConnLifetime: getEnv("DB_MAX_CONN_LIFETIME_MIN", 30),
-		MaxConnIdleTime: getEnv("DB_MAX_CONN_IDLE_TIME_MIN", 10),
-		HealthCheck:     getEnv("DB_HEALTH_CHECK_SEC", 30),
+		MaxConnLifetime: time.Duration(getEnv("DB_MAX_CONN_LIFETIME_MIN", 30)) * time.Minute,
+		MaxConnIdleTime: time.Duration(getEnv("DB_MAX_CONN_IDLE_TIME_MIN", 10)) * time.Minute,
+		HealthCheck:     time.Duration(getEnv("DB_HEALTH_CHECK_SEC", 30)) * time.Second,
 	}
 
 	db.ConnString = fmt.Sprintf(
