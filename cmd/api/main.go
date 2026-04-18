@@ -12,6 +12,7 @@ import (
 
 	"github.com/Guizzs26/pismo/internal/config"
 	db "github.com/Guizzs26/pismo/internal/infra/database"
+	"github.com/Guizzs26/pismo/internal/middleware"
 	"github.com/Guizzs26/pismo/pkg/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -99,5 +100,10 @@ func setupRoutes(deps *dependencies) http.Handler {
 	// mux.HandleFunc("POST /accounts", accountHandler.Create)
 	// mux.HandleFunc("GET /accounts/{accountId}", accountHandler.FindByID)
 
-	return mux
+	return middleware.Chain(
+		mux,
+		middleware.Recovery,
+		middleware.RequestID,
+		middleware.Logging,
+	)
 }
