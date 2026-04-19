@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/Guizzs26/pismo/internal/config"
+	"github.com/Guizzs26/pismo/internal/handler"
 	db "github.com/Guizzs26/pismo/internal/infra/database"
 	"github.com/Guizzs26/pismo/internal/middleware"
+	pg "github.com/Guizzs26/pismo/internal/repository/postgres"
+	"github.com/Guizzs26/pismo/internal/service"
 	"github.com/Guizzs26/pismo/pkg/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -93,12 +96,17 @@ func initDependencies(cfg *config.Config) (*dependencies, error) {
 func setupRoutes(deps *dependencies) http.Handler {
 	mux := http.NewServeMux()
 
-	// accountRepo := pg.NewAccountRepository(deps.pool)
-	// accountService := service.NewAccountService(accountRepo)
-	// accountHandler := handler.NewAccountHandler(accountService)
+	accountRepo := pg.NewAccountRepository(deps.pool)
+	accountService := service.NewAccountService(accountRepo)
+	accountHandler := handler.NewAccountHandler(accountService)
 
-	// mux.HandleFunc("POST /accounts", accountHandler.Create)
-	// mux.HandleFunc("GET /accounts/{accountId}", accountHandler.FindByID)
+	transactionRepo := pg.NewTransactionRepository(deps.pool)
+	transactionService := service.NewTransactionService(transactionRepo)
+	transactionHandler := handler.NewTransactionHandler(transactionService)
+
+	mux.HandleFunc("POST /accounts", accountHandler.Create)
+	mux.HandleFunc("GET /accounts/{accountId}", accountHandler.FindByID)
+	mux.HandleFunc("POST /transactions", transactionHandler.Create)
 
 	return middleware.Chain(
 		mux,

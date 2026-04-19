@@ -21,7 +21,7 @@ func NewAccountRepository(db db.DBTX) *AccountRepository {
 
 func (r *AccountRepository) Create(
 	ctx context.Context,
-	account domain.Account,
+	acc domain.Account,
 ) (domain.Account, error) {
 	const query = `
 		INSERT INTO accounts (document_number)
@@ -29,21 +29,24 @@ func (r *AccountRepository) Create(
 		RETURNING account_id, document_number
 	`
 
-	if err := r.db.QueryRow(ctx, query, account.DocumentNumber).Scan(
-		&account.ID,
-		&account.DocumentNumber,
+	if err := r.db.QueryRow(ctx, query, acc.DocumentNumber).Scan(
+		&acc.ID,
+		&acc.DocumentNumber,
 	); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return domain.Account{}, domain.ErrDocumentAlreadyExists
 		}
-		return domain.Account{}, fmt.Errorf("inserting account with document %q: %w", account.DocumentNumber, err)
+		return domain.Account{}, fmt.Errorf("executing insert statement with document %q: %w", acc.DocumentNumber, err)
 	}
 
-	return account, nil
+	return acc, nil
 }
 
-func (r *AccountRepository) FindByID(ctx context.Context, id int64) (domain.Account, error) {
+func (r *AccountRepository) FindByID(
+	ctx context.Context,
+	id int64,
+) (domain.Account, error) {
 	const query = `
 		SELECT account_id, document_number
 		FROM accounts
@@ -58,7 +61,7 @@ func (r *AccountRepository) FindByID(ctx context.Context, id int64) (domain.Acco
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Account{}, domain.ErrAccountNotFound
 		}
-		return domain.Account{}, fmt.Errorf("querying account with id %d: %v", id, err)
+		return domain.Account{}, fmt.Errorf("executing select query with id %d: %v", id, err)
 	}
 
 	return account, nil
