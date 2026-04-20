@@ -37,7 +37,7 @@ func (r *AccountRepository) Create(
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return domain.Account{}, domain.ErrDocumentAlreadyExists
 		}
-		return domain.Account{}, fmt.Errorf("executing insert statement with document %q: %w", acc.DocumentNumber, err)
+		return domain.Account{}, fmt.Errorf("executing insert statement with document %q: %v", acc.DocumentNumber, err)
 	}
 
 	return acc, nil
