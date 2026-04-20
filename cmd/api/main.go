@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/Guizzs26/pismo/docs"
 	"github.com/Guizzs26/pismo/internal/config"
 	"github.com/Guizzs26/pismo/internal/handler"
 	db "github.com/Guizzs26/pismo/internal/infra/database"
@@ -18,13 +19,19 @@ import (
 	"github.com/Guizzs26/pismo/internal/service"
 	"github.com/Guizzs26/pismo/pkg/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title           Pismo Challenge API
+// @version         1.0
+// @description     REST API for customer account and transaction management.
+// @host            localhost:8080
+// @BasePath        /
 func main() {
 	cfg := config.Load()
 
 	logger.Setup(cfg.AppEnv, cfg.LogLevel)
-	slog.Info("logger initialized", "env", cfg.AppEnv, "level", cfg.LogLevel)
+	slog.Info("logger initialized", "env", cfg.AppEnv, "log_level", cfg.LogLevel)
 
 	deps, err := initDependencies(cfg)
 	if err != nil {
@@ -35,7 +42,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.AppPort,
-		Handler:      setupRoutes(deps),
+		Handler:      setupRoutes(deps, cfg),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -93,7 +100,7 @@ func initDependencies(cfg *config.Config) (*dependencies, error) {
 	}, nil
 }
 
-func setupRoutes(deps *dependencies) http.Handler {
+func setupRoutes(deps *dependencies, cfg *config.Config) http.Handler {
 	mux := http.NewServeMux()
 
 	accountRepo := pg.NewAccountRepository(deps.pool)
@@ -107,6 +114,10 @@ func setupRoutes(deps *dependencies) http.Handler {
 	mux.HandleFunc("POST /accounts", accountHandler.Create)
 	mux.HandleFunc("GET /accounts/{accountId}", accountHandler.FindByID)
 	mux.HandleFunc("POST /transactions", transactionHandler.Create)
+
+	mux.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:"+cfg.AppPort+"/swagger/doc.json"),
+	))
 
 	return middleware.Chain(
 		mux,

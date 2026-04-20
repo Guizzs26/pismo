@@ -20,19 +20,33 @@ func NewTransactionHandler(service *service.TransactionService) *TransactionHand
 	return &TransactionHandler{service: service}
 }
 
-type createTransactionRequest struct {
+type CreateTransactionRequest struct {
 	AccountID       int64   `json:"account_id"        validate:"required,gt=0"`
 	OperationTypeID int     `json:"operation_type_id" validate:"required,gt=0"`
 	Amount          float64 `json:"amount"            validate:"required,gt=0"`
 }
 
-type transactionResponse struct {
+type TransactionResponse struct {
 	TransactionID   int64   `json:"transaction_id"`
 	AccountID       int64   `json:"account_id"`
 	OperationTypeID int     `json:"operation_type_id"`
 	Amount          float64 `json:"amount"`
 }
 
+// @Summary     Create transaction
+// @Description Creates a new financial transaction for an account
+// @Tags        transactions
+// @Accept      json
+// @Produce     json
+// @Param       Idempotency-Key header string true "Unique key to prevent duplicate transactions"
+// @Param       request body CreateTransactionRequest true "Transaction payload"
+// @Success     201 {object} TransactionResponse
+// @Success     200 {object} TransactionResponse
+// @Failure     400 {object} httpx.ErrorResponse
+// @Failure     404 {object} httpx.ErrorResponse
+// @Failure     409 {object} httpx.ErrorResponse
+// @Failure     500 {object} httpx.ErrorResponse
+// @Router      /transactions [post]
 func (h *TransactionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	idempotencyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
 	if idempotencyKey == "" {
@@ -40,7 +54,7 @@ func (h *TransactionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, err := httpx.Decode[createTransactionRequest](w, r)
+	req, err := httpx.Decode[CreateTransactionRequest](w, r)
 	if err != nil {
 		if de, ok := httpx.IsValidationError(err); ok {
 			httpx.ValidationFailed(w, de.Details)
@@ -82,7 +96,7 @@ func (h *TransactionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusOK
 	}
 
-	httpx.Success(w, status, transactionResponse{
+	httpx.Success(w, status, TransactionResponse{
 		TransactionID:   created.ID,
 		AccountID:       created.AccountID,
 		OperationTypeID: created.OperationTypeID,
