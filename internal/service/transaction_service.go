@@ -40,7 +40,7 @@ func (s *TransactionService) Create(
 			return existing, false, nil
 		}
 
-		return domain.Transaction{}, false, fmt.Errorf("creating transaction for account %d: %v", t.AccountID, err)
+		return domain.Transaction{}, false, fmt.Errorf("creating transaction for account %d: %w", t.AccountID, err)
 	}
 
 	return createdT, true, nil
