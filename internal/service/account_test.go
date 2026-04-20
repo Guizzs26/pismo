@@ -23,7 +23,7 @@ func (m *MockAccountRepository) FindByID(ctx context.Context, id int64) (domain.
 	return args.Get(0).(domain.Account), args.Error(1)
 }
 
-func TestAccount_Service_Create_Success_ReturnsAccountWithID(t *testing.T) {
+func TestAccountService_Create_Success_ReturnsAccountWithID(t *testing.T) {
 	repo := new(MockAccountRepository)
 	svc := NewAccountService(repo)
 
@@ -40,7 +40,7 @@ func TestAccount_Service_Create_Success_ReturnsAccountWithID(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-func TestAccount_Service_Create_DuplicateDocument_ReturnsErrDocumentAlreadyExists(t *testing.T) {
+func TestAccountService_Create_DuplicateDocument_ReturnsErrDocumentAlreadyExists(t *testing.T) {
 	repo := new(MockAccountRepository)
 	svc := NewAccountService(repo)
 
