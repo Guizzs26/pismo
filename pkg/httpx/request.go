@@ -3,7 +3,10 @@ package httpx
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -11,6 +14,16 @@ import (
 const maxBodyBytes = 1 << 20 // 1MB
 
 var validate = validator.New()
+
+func init() {
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := fld.Tag.Get("json")
+		if name == "" || name == "-" {
+			return fld.Name
+		}
+		return strings.Split(name, ",")[0]
+	})
+}
 
 type DecodeError struct {
 	Message string
@@ -48,7 +61,7 @@ func Decode[T any](w http.ResponseWriter, r *http.Request) (T, error) {
 			details := make([]ErrorDetail, len(ve))
 			for i, fe := range ve {
 				details[i] = ErrorDetail{
-					Field: toSnakeCase(fe.Field()),
+					Field: fe.Field(),
 					Issue: validationMessage(fe),
 				}
 			}
@@ -66,6 +79,8 @@ func validationMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "field is required"
+	case "gt":
+		return fmt.Sprintf("must be greater than %s", fe.Param())
 	case "min":
 		return "value is too short"
 	case "max":
@@ -77,15 +92,4 @@ func validationMessage(fe validator.FieldError) string {
 	default:
 		return "invalid value"
 	}
-}
-
-func toSnakeCase(s string) string {
-	var result []rune
-	for i, r := range s {
-		if r >= 'A' && r <= 'Z' && i > 0 {
-			result = append(result, '_')
-		}
-		result = append(result, r|32)
-	}
-	return string(result)
 }
