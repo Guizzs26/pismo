@@ -22,6 +22,19 @@ make down
 make test
 ```
 
+Just unit tests
+
+
+```bash
+make test-unit
+```
+
+Just integration tests
+
+```bash
+make test-integration
+```
+
 ## Endpoints
 
 | Method | Path | Description |

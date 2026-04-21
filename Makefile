@@ -1,4 +1,4 @@
-.PHONY: run down restart build test logs logs-app logs-db db docs
+.PHONY: run down restart build test test-unit test-integration logs logs-app logs-db db docs
 
 run:
 	docker compose up -d
@@ -11,6 +11,12 @@ restart:
 
 test:
 	go test ./... -v -count=1
+
+test-unit:
+	go test ./internal/... -v -count=1
+
+test-integration:
+	go test ./tests/integration/... -v -count=1
 
 logs:
 	docker compose logs -f
