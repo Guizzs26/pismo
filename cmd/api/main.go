@@ -28,6 +28,13 @@ import (
 // @host            localhost:8080
 // @BasePath        /
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "application failed: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	cfg := config.Load()
 
 	logger.Setup(cfg.AppEnv, cfg.LogLevel)
@@ -35,42 +42,47 @@ func main() {
 
 	deps, err := initDependencies(cfg)
 	if err != nil {
-		slog.Error("failed to initialize dependencies", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("initializing dependencies: %v", err)
 	}
 	defer deps.cleanup()
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.AppPort,
-		Handler:      setupRoutes(deps, cfg),
+		Handler:      setupRoutes(deps),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
+	srvErr := make(chan error, 1)
 	go func() {
 		slog.Info("server starting", "port", cfg.AppPort, "env", cfg.AppEnv)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("server failed", "error", err)
-			os.Exit(1)
+			srvErr <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-quit
-	slog.Info("shutdown signal received", "signal", sig.String())
+
+	select {
+	case err := <-srvErr:
+		slog.Error("server crashed", "error", err)
+		return fmt.Errorf("server error: %v", err)
+	case sig := <-quit:
+		slog.Info("shutdown signal received", "signal", sig.String())
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	slog.Info("shutting down server gracefully", "timeout", "30s")
+	slog.Info("shutting down server gracefully")
 	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("forced shutdown", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("graceful shutdown failed: %v", err)
 	}
 
 	slog.Info("server stopped")
+	return nil
 }
 
 type dependencies struct {
@@ -79,17 +91,14 @@ type dependencies struct {
 }
 
 func initDependencies(cfg *config.Config) (*dependencies, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	slog.Info("connecting to postgres database", "host", cfg.DB.Host, "name", cfg.DB.Name)
+	slog.Info("connecting to postgres database")
 	pool, err := db.NewPostgresPool(ctx, cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("database connection: %v", err)
 	}
-	slog.Info("database connection pool established",
-		"max_conns", cfg.DB.MaxConns,
-		"min_conns", cfg.DB.MinConns,
-	)
 
 	return &dependencies{
 		pool: pool,
@@ -100,7 +109,7 @@ func initDependencies(cfg *config.Config) (*dependencies, error) {
 	}, nil
 }
 
-func setupRoutes(deps *dependencies, cfg *config.Config) http.Handler {
+func setupRoutes(deps *dependencies) http.Handler {
 	mux := http.NewServeMux()
 
 	accountRepo := pg.NewAccountRepository(deps.pool)
@@ -116,7 +125,7 @@ func setupRoutes(deps *dependencies, cfg *config.Config) http.Handler {
 	mux.HandleFunc("POST /transactions", transactionHandler.Create)
 
 	mux.Handle("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:"+cfg.AppPort+"/swagger/doc.json"),
+		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	return middleware.Chain(
