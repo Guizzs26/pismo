@@ -73,7 +73,7 @@ func TestAccountEndpoints(t *testing.T) {
 		assert.Equal(t, "11122233344", accResp.DocumentNumber)
 	})
 
-	t.Run("GET /accounts - Should return 409 for duplicate document", func(t *testing.T) {
+	t.Run("GET /accounts/{id} - Should return 409 for duplicate document", func(t *testing.T) {
 		clearDB(t)
 
 		resp, err := http.Get(testServer.URL + "/accounts/999")

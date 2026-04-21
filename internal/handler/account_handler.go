@@ -51,7 +51,11 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acc, err := h.service.Create(r.Context(), req.DocumentNumber)
+	acc := domain.Account{
+		DocumentNumber: req.DocumentNumber,
+	}
+
+	acc, err = h.service.Create(r.Context(), acc)
 	if err != nil {
 		if errors.Is(err, domain.ErrDocumentAlreadyExists) {
 			httpx.Conflict(w, "document number already exists")

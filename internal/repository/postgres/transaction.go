@@ -77,7 +77,7 @@ func (r *TransactionRepository) FindByIdempotencyKey(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Transaction{}, domain.ErrTransactionNotFound
 		}
-		return domain.Transaction{}, fmt.Errorf("querying transaction by idempotency key %q: %w", key, err)
+		return domain.Transaction{}, fmt.Errorf("querying transaction by idempotency key %q: %v", key, err)
 	}
 
 	return t, nil

@@ -15,11 +15,7 @@ func NewAccountService(repo domain.AccountRepository) *AccountService {
 	return &AccountService{repo: repo}
 }
 
-func (s *AccountService) Create(ctx context.Context, documentNumber string) (domain.Account, error) {
-	acc := domain.Account{
-		DocumentNumber: documentNumber,
-	}
-
+func (s *AccountService) Create(ctx context.Context, acc domain.Account) (domain.Account, error) {
 	acc, err := s.repo.Create(ctx, acc)
 	if err != nil {
 		return domain.Account{}, fmt.Errorf("registering account: %w", err)

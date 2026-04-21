@@ -32,7 +32,7 @@ func TestAccountService_Create_Success_ReturnsAccountWithID(t *testing.T) {
 
 	repo.On("Create", mock.Anything, input).Return(returned, nil)
 
-	result, err := svc.Create(context.Background(), "12345678900")
+	result, err := svc.Create(context.Background(), input)
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), result.ID)
@@ -48,7 +48,7 @@ func TestAccountService_Create_DuplicateDocument_ReturnsErrDocumentAlreadyExists
 
 	repo.On("Create", mock.Anything, input).Return(domain.Account{}, domain.ErrDocumentAlreadyExists)
 
-	result, err := svc.Create(context.Background(), "12345678900")
+	result, err := svc.Create(context.Background(), input)
 
 	assert.ErrorIs(t, err, domain.ErrDocumentAlreadyExists)
 	assert.Empty(t, result)

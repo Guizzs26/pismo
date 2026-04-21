@@ -36,6 +36,20 @@ func TestTransactionEndpoints(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		var txRes struct {
+			TransactionID   int64   `json:"transaction_id"`
+			AccountID       int64   `json:"account_id"`
+			OperationTypeID int     `json:"operation_type_id"`
+			Amount          float64 `json:"amount"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&txRes)
+		assert.NoError(t, err)
+
+		assert.Equal(t, int64(1), txRes.TransactionID)
+		assert.Equal(t, int64(1), txRes.AccountID)
+		assert.Equal(t, 1, txRes.OperationTypeID)
+		assert.Equal(t, -150.75, txRes.Amount)
 	})
 
 	t.Run("POST /transactions - Should return 200 for idempotent request with same key", func(t *testing.T) {
